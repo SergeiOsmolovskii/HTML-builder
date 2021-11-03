@@ -8,6 +8,10 @@ const rl = readline.createInterface({
   input: process.stdin
 });
 
+fs.writeFile(filePath, '', (err) => {
+  if (err) throw err;
+})
+
 console.log('Write some text');
 
 process.stdin.on('data', (data) => {
