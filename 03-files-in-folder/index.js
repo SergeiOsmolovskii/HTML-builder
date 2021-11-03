@@ -3,9 +3,7 @@ const fs = require('fs');
 const filePath = path.join(__dirname, 'secret-folder');
 
 fs.promises
-    .readdir(filePath, {
-        withFileTypes: true
-    })
+    .readdir(filePath, {withFileTypes: true})
     .then((res) => res.forEach(item => {
         if (!item.isFile()) return;
         const itemPath = path.join(__dirname, 'secret-folder', item.name);
