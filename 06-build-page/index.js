@@ -72,25 +72,30 @@ const createIndex = async (templatePath) => {
     
 }
 
+
 const addComponent = async () => {
 
-    let index = [];
+    const templateFile = fs.promises.readFile(templatePath, 'utf8');
+    let templateFileData = await templateFile;
 
-    const readStream = fs.createReadStream(templatePath, 'utf8');
-    readStream.on('data', (data) => {
-        return data;
-    })
-    
-    console.log(index);
-
-    await fs.promises.readdir(componentsPath, {
+    fs.readdir(componentsPath, {
         withFileTypes: true
-    })
-    .then((res) => res.forEach(item => {
-        console.log(`{{${path.parse(item.name).name}}}`);   
-//                                console.log(str.replace(`{{${path.parse(item.name).name}}}`, *************));
-    }));
+    }, (err, data) => {
+        if (err) throw err;
+        data.forEach(item => {
 
+            (async () => {
+                const fileName = `{{${path.parse(item.name).name}}}`;
+                const filePath = path.join(componentsPath, item.name);
+                let componentFile = fs.promises.readFile(filePath, 'utf8');
+                let componentFileData = await componentFile;
+                templateFileData = templateFileData.replace(fileName, componentFileData);
+                fs.writeFile(newIndexFilePath, await templateFileData, (err) => {
+                    if (err) throw err;
+                });
+            })();
+        });
+    });
 }
 
 const buildProj = async () => {
@@ -100,7 +105,6 @@ const buildProj = async () => {
     await createIndex(templatePath);
     await addComponent();
 }
-
 
 
 buildProj();
