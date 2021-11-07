@@ -1,7 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const { text } = require('stream/consumers');
-const { Console } = require('console');
 const mainPath = path.join(__dirname, 'project-dist');
 const newIndexFilePath = path.join(mainPath, 'index.html');
 const assetsPath = path.join(__dirname, 'assets');
@@ -10,15 +8,11 @@ const newAsetsPath = path.join(mainPath, 'assets');
 const templatePath = path.join(__dirname, 'template.html');
 const componentsPath = path.join(__dirname, 'components');
 
-
-
-
 fs.promises.mkdir(mainPath, {recursive: true}, (err) => {
     if (err) throw err;
 });
 
 const deepCopyDir = async (itemPath, copyItemPath) => {
-
     await fs.promises.mkdir(copyItemPath, {recursive: true}, (err) => {
         if (err) throw err;
     });
@@ -54,46 +48,47 @@ const collectStyles = async (stylePath, mainPath) => {
             const readStream = fs.createReadStream(itemPath, 'utf8');
             readStream.on('data', (data) => {
                 fs.promises.appendFile(newStyleFilePath, data);
-            }); 
+            });
         }));
 }
 
 const createIndex = async (templatePath) => {
-
-    await fs.writeFile(newIndexFilePath, '', (err) => {
+    fs.writeFile(newIndexFilePath, '', (err) => {
         if (err) throw err;
     });
 
     const readStream = fs.createReadStream(templatePath, 'utf8');
-    
-        readStream.on('data', (data) => {
+    readStream.on('data', (data) => {
         fs.promises.appendFile(newIndexFilePath, data);
     });
-    
 }
 
-
 const addComponent = async () => {
-
     const templateFile = fs.promises.readFile(templatePath, 'utf8');
     let templateFileData = await templateFile;
+    let arr = [];
+    let fileNames = [];
 
     fs.readdir(componentsPath, {
         withFileTypes: true
     }, (err, data) => {
         if (err) throw err;
         data.forEach(item => {
+            if (path.extname(item.name) != '.html') return;
+            const fileName = `{{${path.parse(item.name).name}}}`;
+            const filePath = path.join(componentsPath, item.name);
+            let componentFile = fs.promises.readFile(filePath, 'utf8');
+            arr.push(componentFile);
+            fileNames.push(fileName);
+        });
 
-            (async () => {
-                const fileName = `{{${path.parse(item.name).name}}}`;
-                const filePath = path.join(componentsPath, item.name);
-                let componentFile = fs.promises.readFile(filePath, 'utf8');
-                let componentFileData = await componentFile;
-                templateFileData = templateFileData.replace(fileName, componentFileData);
-                fs.writeFile(newIndexFilePath, await templateFileData, (err) => {
-                    if (err) throw err;
-                });
-            })();
+        Promise.all(arr).then(val => {
+            val.forEach((item, index) => {
+                templateFileData = templateFileData.replace(fileNames[index], item);
+            });
+            fs.writeFile(newIndexFilePath, templateFileData, (err) => {
+                if (err) throw err;
+            });
         });
     });
 }
@@ -105,6 +100,5 @@ const buildProj = async () => {
     await createIndex(templatePath);
     await addComponent();
 }
-
 
 buildProj();
